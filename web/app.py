@@ -1,15 +1,14 @@
 """AI RESCUE Web Service - Code Maturity Assessment SaaS"""
 
-import json
 import logging
 import os
 import shutil
 import tempfile
 import uuid
 import zipfile
-from datetime import datetime
 from pathlib import Path
 from threading import Thread
+from typing import Optional
 
 from flask import (
     Flask,
@@ -26,7 +25,18 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from analyzer import analyze_all
-from reporter import DIMENSION_LABELS, GRADE_TABLE
+from database import (
+    complete_job,
+    create_job,
+    get_job,
+    get_user,
+    get_user_jobs,
+    init_db,
+    update_job_status,
+    update_user_plan,
+    upsert_user,
+)
+from reporter import GRADE_TABLE
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,16 +49,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "ai-rescue-dev-secret-key-change-in-prod")
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB max upload
 
-# In-memory store for analysis jobs (would be DB in production)
-analysis_jobs = {}
-
-MOCK_USER = {
-    "id": "mock-user-001",
-    "name": "Demo User",
-    "email": "demo@airescue.dev",
-    "avatar": None,
-    "plan": "free",
-}
+MOCK_USER_ID = "mock-user-001"
+MOCK_USER_NAME = "Demo User"
+MOCK_USER_EMAIL = "demo@airescue.dev"
 
 
 def _get_grade(score: float):
@@ -59,16 +62,21 @@ def _get_grade(score: float):
     return "?", "Unknown"
 
 
+def _current_user() -> Optional[dict]:
+    """Get current user from session, refreshing from DB."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    return get_user(user_id)
+
+
 def _allowed_file(filename: str) -> bool:
     """Check if uploaded file is an allowed archive type."""
     return filename.lower().endswith((".zip",))
 
 
 def _extract_upload(file_storage, target_dir: str) -> bool:
-    """Extract uploaded zip file to target directory.
-
-    Returns True on success.
-    """
+    """Extract uploaded zip file to target directory."""
     logger.info("Extracting uploaded file to %s", target_dir)
     try:
         tmp_zip = os.path.join(target_dir, "_upload.zip")
@@ -79,7 +87,7 @@ def _extract_upload(file_storage, target_dir: str) -> bool:
 
         os.remove(tmp_zip)
 
-        # If zip contained a single root folder, use that as the repo root
+        # If zip contained a single root folder, flatten it
         entries = [e for e in os.listdir(target_dir) if not e.startswith(".")]
         if len(entries) == 1 and os.path.isdir(os.path.join(target_dir, entries[0])):
             inner = os.path.join(target_dir, entries[0])
@@ -99,9 +107,9 @@ def _extract_upload(file_storage, target_dir: str) -> bool:
 
 
 def _run_analysis(job_id: str, code_dir: str):
-    """Run analysis in background thread, update job status, then cleanup."""
+    """Run analysis in background thread, persist to DB, then cleanup."""
     logger.info("Background analysis started: job_id=%s", job_id)
-    analysis_jobs[job_id]["status"] = "analyzing"
+    update_job_status(job_id, "analyzing")
 
     try:
         results = analyze_all(code_dir)
@@ -117,29 +125,22 @@ def _run_analysis(job_id: str, code_dir: str):
         grade, grade_desc = _get_grade(avg_score)
         weakest_dim = min(scores, key=scores.get) if scores else None
 
-        analysis_jobs[job_id].update({
-            "status": "complete",
-            "completed_at": datetime.now().isoformat(),
-            "results": results,
-            "summary": {
-                "scores": scores,
-                "average": round(avg_score, 2),
-                "grade": grade,
-                "grade_desc": grade_desc,
-                "weakest": weakest_dim,
-                "weakest_score": scores.get(weakest_dim, 0) if weakest_dim else 0,
-            },
-        })
+        summary = {
+            "scores": scores,
+            "average": round(avg_score, 2),
+            "grade": grade,
+            "grade_desc": grade_desc,
+            "weakest": weakest_dim,
+            "weakest_score": scores.get(weakest_dim, 0) if weakest_dim else 0,
+        }
+
+        complete_job(job_id, summary, results)
         logger.info("Analysis complete: job_id=%s, grade=%s", job_id, grade)
 
     except Exception as e:
         logger.error("Analysis failed: job_id=%s, error=%s", job_id, e)
-        analysis_jobs[job_id].update({
-            "status": "failed",
-            "error": str(e),
-        })
+        update_job_status(job_id, "failed", error=str(e))
     finally:
-        # Always cleanup uploaded files
         logger.info("Cleaning up code directory: %s", code_dir)
         shutil.rmtree(code_dir, ignore_errors=True)
 
@@ -149,22 +150,23 @@ def _run_analysis(job_id: str, code_dir: str):
 @app.route("/")
 def index():
     """Landing page."""
-    user = session.get("user")
+    user = _current_user()
     return render_template("index.html", user=user)
 
 
 @app.route("/auth/google/login")
 def google_login():
-    """Mock Google OAuth login - always logs in as demo user."""
+    """Mock Google OAuth login."""
     logger.info("Mock Google login triggered")
-    session["user"] = MOCK_USER
+    user = upsert_user(MOCK_USER_ID, MOCK_USER_NAME, MOCK_USER_EMAIL)
+    session["user_id"] = user["id"]
     return redirect(url_for("dashboard"))
 
 
 @app.route("/auth/logout")
 def logout():
     """Logout - clear session."""
-    session.pop("user", None)
+    session.pop("user_id", None)
     logger.info("User logged out")
     return redirect(url_for("index"))
 
@@ -172,25 +174,18 @@ def logout():
 @app.route("/dashboard")
 def dashboard():
     """User dashboard - shows past analyses."""
-    user = session.get("user")
+    user = _current_user()
     if not user:
         return redirect(url_for("index"))
 
-    # Get user's analysis jobs
-    user_jobs = [
-        {**job, "id": jid}
-        for jid, job in analysis_jobs.items()
-        if job.get("user_id") == user["id"]
-    ]
-    user_jobs.sort(key=lambda j: j.get("created_at", ""), reverse=True)
-
-    return render_template("dashboard.html", user=user, jobs=user_jobs)
+    jobs = get_user_jobs(user["id"])
+    return render_template("dashboard.html", user=user, jobs=jobs)
 
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
     """Handle file upload and start analysis."""
-    user = session.get("user")
+    user = _current_user()
     if not user:
         return jsonify({"error": "Login required"}), 401
 
@@ -210,14 +205,9 @@ def analyze():
         shutil.rmtree(code_dir, ignore_errors=True)
         return jsonify({"error": "Failed to extract zip file"}), 400
 
-    # Create analysis job
+    # Create job in DB
     job_id = str(uuid.uuid4())[:8]
-    analysis_jobs[job_id] = {
-        "user_id": user["id"],
-        "filename": file.filename,
-        "created_at": datetime.now().isoformat(),
-        "status": "queued",
-    }
+    create_job(job_id, user["id"], file.filename)
 
     # Start background analysis
     thread = Thread(target=_run_analysis, args=(job_id, code_dir), daemon=True)
@@ -230,18 +220,17 @@ def analyze():
 @app.route("/api/job/<job_id>")
 def job_status(job_id):
     """Poll analysis job status."""
-    user = session.get("user")
+    user = _current_user()
     if not user:
         return jsonify({"error": "Login required"}), 401
 
-    job = analysis_jobs.get(job_id)
+    job = get_job(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
     if job.get("user_id") != user["id"]:
         return jsonify({"error": "Access denied"}), 403
 
-    # For free plan users, strip detailed results
     response = {
         "job_id": job_id,
         "status": job["status"],
@@ -250,14 +239,14 @@ def job_status(job_id):
     }
 
     if job["status"] == "complete":
-        summary = job.get("summary", {})
-        response["summary"] = summary
+        response["summary"] = job.get("summary")
 
-        # Free plan: only grades, no details
-        if user.get("plan") == "free":
-            response["plan_limited"] = True
-        else:
+        # Pro plan: include full results
+        if user.get("plan") == "pro":
             response["results"] = job.get("results")
+            response["plan_limited"] = False
+        else:
+            response["plan_limited"] = True
 
     elif job["status"] == "failed":
         response["error"] = job.get("error")
@@ -268,11 +257,11 @@ def job_status(job_id):
 @app.route("/report/<job_id>")
 def report_page(job_id):
     """Report view page."""
-    user = session.get("user")
+    user = _current_user()
     if not user:
         return redirect(url_for("index"))
 
-    job = analysis_jobs.get(job_id)
+    job = get_job(job_id)
     if not job or job.get("user_id") != user["id"]:
         return redirect(url_for("dashboard"))
 
@@ -282,10 +271,35 @@ def report_page(job_id):
 @app.route("/pricing")
 def pricing():
     """Pricing page."""
-    user = session.get("user")
+    user = _current_user()
     return render_template("pricing.html", user=user)
 
 
+@app.route("/api/upgrade-pro", methods=["POST"])
+def upgrade_pro():
+    """Mock upgrade to Pro plan."""
+    user = _current_user()
+    if not user:
+        return jsonify({"error": "Login required"}), 401
+
+    updated = update_user_plan(user["id"], "pro")
+    logger.info("User upgraded to Pro: user_id=%s", user["id"])
+    return jsonify({"plan": updated["plan"], "message": "Upgraded to Pro!"})
+
+
+@app.route("/api/downgrade-free", methods=["POST"])
+def downgrade_free():
+    """Mock downgrade back to Free plan."""
+    user = _current_user()
+    if not user:
+        return jsonify({"error": "Login required"}), 401
+
+    updated = update_user_plan(user["id"], "free")
+    logger.info("User downgraded to Free: user_id=%s", user["id"])
+    return jsonify({"plan": updated["plan"], "message": "Downgraded to Free"})
+
+
 if __name__ == "__main__":
+    init_db()
     logger.info("Starting AI RESCUE Web Service on http://localhost:5050")
     app.run(debug=True, host="0.0.0.0", port=5050)

@@ -1,6 +1,67 @@
 {% extends "base.html" %}
 {% block title %}Report{% endblock %}
 
+{% block head %}
+<style>
+  .detail-section { margin-top: 48px; }
+  .detail-dimension {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-soft);
+  }
+  .detail-dimension-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .detail-dimension-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .detail-dimension-score { font-weight: 800; font-size: 1.2rem; }
+
+  .sub-score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px; }
+  .sub-score-item {
+    background: var(--bg-primary); border-radius: var(--radius-sm); padding: 16px;
+  }
+  .sub-score-label { font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 6px; }
+  .sub-score-value { font-size: 1.3rem; font-weight: 800; }
+  .sub-score-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .sub-score-bar-fill { height: 100%; border-radius: 2px; }
+
+  .findings-list { margin-bottom: 16px; }
+  .findings-list li {
+    font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7;
+    padding: 4px 0; list-style: none; padding-left: 16px; position: relative;
+  }
+  .findings-list li::before {
+    content: ''; position: absolute; left: 0; top: 12px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--text-muted);
+  }
+
+  .critical-issues { margin-bottom: 16px; }
+  .critical-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; margin-bottom: 8px;
+    background: #fff0f2; border: 1px solid #ffc0cb; border-radius: var(--radius-sm);
+    font-size: 0.85rem; color: #8b2035; line-height: 1.6;
+  }
+  .critical-item .critical-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 2px; }
+
+  .recommendations { }
+  .rec-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; margin-bottom: 8px;
+    background: var(--bg-mint); border: 1px solid rgba(0, 201, 167, 0.2); border-radius: var(--radius-sm);
+    font-size: 0.85rem; color: #0a6b58; line-height: 1.6;
+  }
+  .rec-item .rec-icon { flex-shrink: 0; margin-top: 2px; }
+
+  @media (max-width: 768px) {
+    .sub-score-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="report-page">
   <!-- Loading State -->
@@ -34,31 +95,27 @@
       </span>
     </div>
 
-    <!-- Paywall Section: Detailed Results -->
-    <div class="paywall-section">
+    <!-- Pro: Detailed Results -->
+    <div id="proDetailSection" class="detail-section" style="display: none;"></div>
+
+    <!-- Free: Paywall -->
+    <div id="freePaywallSection" class="paywall-section" style="display: none;">
       <div class="paywall-blur">
         <div class="section-label">// Detailed Analysis</div>
         <h2 class="section-title" style="margin-bottom: 24px;">Critical Issues & Recommendations</h2>
-
-        <!-- Fake detailed content -->
-        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
+        <div style="background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
           <h3 style="margin-bottom: 12px;">Scalability - Critical Issues (4)</h3>
-          <p>No rate limiting on public API routes. Zero code splitting across modules. O(N!) combinatorial explosion in synchronous function...</p>
+          <p style="color: var(--text-secondary);">No rate limiting on public API routes. Zero code splitting across modules. O(N!) combinatorial explosion in synchronous function...</p>
         </div>
-        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
+        <div style="background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
           <h3 style="margin-bottom: 12px;">Stability - Critical Issues (7)</h3>
-          <p>API keys hardcoded in source code. No timeout on external API calls. No retry logic for transient failures. No health check endpoint...</p>
+          <p style="color: var(--text-secondary);">API keys hardcoded in source code. No timeout on external API calls. No retry logic for transient failures...</p>
         </div>
-        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
+        <div style="background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
           <h3 style="margin-bottom: 12px;">Security - Critical Issues (5)</h3>
-          <p>Secrets committed to repository. Missing security headers. External scripts without SRI integrity verification...</p>
-        </div>
-        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;">
-          <h3 style="margin-bottom: 12px;">Recommendations (15)</h3>
-          <p>Implement rate limiting middleware. Add circuit breaker pattern. Move secrets to environment variables. Configure security headers...</p>
+          <p style="color: var(--text-secondary);">Secrets committed to repository. Missing security headers. External scripts without SRI integrity verification...</p>
         </div>
       </div>
-
       <div class="paywall-overlay">
         <div class="lock-icon">&#x1F512;</div>
         <h3>Detailed Analysis Available on Pro Plan</h3>
@@ -75,23 +132,18 @@
 const JOB_ID = '{{ job_id }}';
 
 const DIMENSION_META = {
-  scalability: { label: 'Scalability', labelKo: '확장성', icon: '&#x21C5;', color: '#7c5cff' },
-  stability: { label: 'Stability', labelKo: '안정성', icon: '&#x2764;', color: '#00d4aa' },
-  maintainability: { label: 'Maintainability', labelKo: '유지보수성', icon: '&#x270E;', color: '#3da0ff' },
-  security: { label: 'Security', labelKo: '보안성', icon: '&#x1F512;', color: '#ff4466' },
+  scalability: { label: 'Scalability', labelKo: '확장성', icon: '&#x21C5;', color: '#7c4dff' },
+  stability: { label: 'Stability', labelKo: '안정성', icon: '&#x2764;', color: '#00c9a7' },
+  maintainability: { label: 'Maintainability', labelKo: '유지보수성', icon: '&#x270E;', color: '#4da6ff' },
+  security: { label: 'Security', labelKo: '보안성', icon: '&#x1F512;', color: '#ff5c8a' },
 };
 
-function getGradeClass(grade) {
-  if (grade.startsWith('A')) return 'grade-a';
-  if (grade.startsWith('B')) return 'grade-b';
-  if (grade.startsWith('C')) return 'grade-c';
-  return 'grade-d';
-}
+const DIM_ORDER = ['scalability', 'stability', 'maintainability', 'security'];
 
 function getGradeColor(grade) {
-  if (grade.startsWith('A')) return '#00d4aa';
-  if (grade.startsWith('B')) return '#3da0ff';
-  if (grade.startsWith('C')) return '#ffb340';
+  if (grade.startsWith('A')) return '#00c9a7';
+  if (grade.startsWith('B')) return '#4da6ff';
+  if (grade.startsWith('C')) return '#ffb020';
   return '#ff4466';
 }
 
@@ -104,6 +156,87 @@ function scoreToGrade(score) {
   if (score >= 2.0) return 'C';
   if (score >= 1.5) return 'D';
   return 'F';
+}
+
+function renderProDetails(results) {
+  const container = document.getElementById('proDetailSection');
+  container.innerHTML = '<div class="section-label">// Detailed Analysis</div><h2 class="section-title" style="margin-bottom: 24px;">Full Report</h2>';
+
+  for (const dim of DIM_ORDER) {
+    const result = results.find(r => r.dimension === dim);
+    if (!result || result.error) continue;
+
+    const meta = DIMENSION_META[dim];
+    const overallScore = result.overall_score || 0;
+    const dimGrade = scoreToGrade(overallScore);
+    const dimColor = getGradeColor(dimGrade);
+    const subScores = result.sub_scores || {};
+    const criticals = result.critical_issues || [];
+    const recs = result.recommendations || [];
+
+    let html = `<div class="detail-dimension">`;
+    html += `<div class="detail-dimension-header">
+      <div class="detail-dimension-title">${meta.icon} ${meta.labelKo} (${meta.label})</div>
+      <div class="detail-dimension-score" style="color: ${dimColor};">${overallScore.toFixed(1)}/5.0 <span style="font-size: 0.85rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: ${dimColor}18;">${dimGrade}</span></div>
+    </div>`;
+
+    // Sub-scores
+    const subEntries = Object.entries(subScores);
+    if (subEntries.length > 0) {
+      html += `<div class="sub-score-grid">`;
+      for (const [subName, subData] of subEntries) {
+        const subScore = subData.score || 0;
+        const subColor = getGradeColor(scoreToGrade(subScore));
+        const subLabel = subName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const subPct = (subScore / 5.0 * 100).toFixed(0);
+        const findings = subData.findings || [];
+
+        html += `<div class="sub-score-item">
+          <div class="sub-score-label">${subLabel}</div>
+          <div class="sub-score-value" style="color: ${subColor};">${subScore}/5</div>
+          <div class="sub-score-bar"><div class="sub-score-bar-fill" style="width: ${subPct}%; background: ${subColor};"></div></div>`;
+
+        if (findings.length > 0) {
+          html += `<ul class="findings-list" style="margin-top: 10px;">`;
+          for (const f of findings) {
+            html += `<li>${escapeHtml(f)}</li>`;
+          }
+          html += `</ul>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Critical issues
+    if (criticals.length > 0) {
+      html += `<div class="critical-issues"><div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 10px; color: #d4364f;">Critical Issues (${criticals.length})</div>`;
+      for (const c of criticals) {
+        html += `<div class="critical-item"><span class="critical-icon">&#x2717;</span><span>${escapeHtml(c)}</span></div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Recommendations
+    if (recs.length > 0) {
+      html += `<div class="recommendations"><div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 10px; color: #0a6b58;">Recommendations (${recs.length})</div>`;
+      for (const r of recs) {
+        html += `<div class="rec-item"><span class="rec-icon">&#x2192;</span><span>${escapeHtml(r)}</span></div>`;
+      }
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    container.innerHTML += html;
+  }
+
+  container.style.display = '';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 async function loadReport() {
@@ -167,6 +300,13 @@ async function loadReport() {
           </div>
         </div>
       `;
+    }
+
+    // Pro vs Free section
+    if (data.plan_limited) {
+      document.getElementById('freePaywallSection').style.display = '';
+    } else if (data.results) {
+      renderProDetails(data.results);
     }
 
     // Show content

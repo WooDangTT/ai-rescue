@@ -27,8 +27,10 @@
         <li><span style="color: var(--text-muted);">&#x2717;</span> <span style="color: var(--text-muted);">Critical Issues 목록</span></li>
         <li><span style="color: var(--text-muted);">&#x2717;</span> <span style="color: var(--text-muted);">맞춤 Recommendations</span></li>
       </ul>
-      {% if user %}
+      {% if user and user.plan == 'free' %}
         <button class="btn btn-ghost" style="width: 100%;" disabled>Current Plan</button>
+      {% elif user and user.plan == 'pro' %}
+        <button class="btn btn-ghost" style="width: 100%;" onclick="switchPlan('free')">Switch to Free</button>
       {% else %}
         <a href="{{ url_for('google_login') }}" class="btn btn-ghost" style="width: 100%;">Get Started</a>
       {% endif %}
@@ -52,7 +54,13 @@
         <li><span class="check">&#x2713;</span> JSON/PDF 리포트 다운로드</li>
         <li><span class="check">&#x2713;</span> GitHub repo URL 직접 분석</li>
       </ul>
-      <button class="btn btn-upgrade" style="width: 100%;" onclick="alert('Coming soon! Pro 플랜은 현재 준비 중입니다.')">Upgrade to Pro</button>
+      {% if user and user.plan == 'pro' %}
+        <button class="btn btn-upgrade" style="width: 100%; opacity: 0.7;" disabled>Current Plan</button>
+      {% elif user %}
+        <button class="btn btn-upgrade" style="width: 100%;" onclick="switchPlan('pro')">Upgrade to Pro</button>
+      {% else %}
+        <a href="{{ url_for('google_login') }}" class="btn btn-upgrade" style="width: 100%;">Get Started</a>
+      {% endif %}
     </div>
 
     <!-- Enterprise -->
@@ -75,4 +83,21 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function switchPlan(plan) {
+  const url = plan === 'pro' ? '/api/upgrade-pro' : '/api/downgrade-free';
+  try {
+    const resp = await fetch(url, { method: 'POST' });
+    const data = await resp.json();
+    if (data.plan) {
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Failed: ' + err.message);
+  }
+}
+</script>
 {% endblock %}
