@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <span class="tag tag-{{ user.plan }}">{{ user.plan | upper }} PLAN</span>
+  </div>
+
+  <!-- Upload Area -->
+  <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon">&#x1F4E6;</div>
+    <div class="upload-title">Drop your project .zip file here</div>
+    <div class="upload-desc">or click to browse &middot; Max 50MB &middot; .zip files only</div>
+    <div class="upload-warning">
+      &#x1F512; Uploaded files are deleted immediately after analysis
+    </div>
+    <input type="file" id="fileInput" accept=".zip" style="display: none;">
+  </div>
+
+  <!-- Progress -->
+  <div class="analysis-progress" id="analysisProgress">
+    <div class="progress-header">
+      <div class="spinner"></div>
+      <span class="progress-title" id="progressTitle">Analyzing your code...</span>
+    </div>
+    <div class="progress-steps">
+      <div class="progress-step" id="step-scalability">
+        <div class="step-icon">&#x21C5;</div>
+        <div class="step-label">Scalability</div>
+      </div>
+      <div class="progress-step" id="step-stability">
+        <div class="step-icon">&#x2764;</div>
+        <div class="step-label">Stability</div>
+      </div>
+      <div class="progress-step" id="step-maintainability">
+        <div class="step-icon">&#x270E;</div>
+        <div class="step-label">Maintainability</div>
+      </div>
+      <div class="progress-step" id="step-security">
+        <div class="step-icon">&#x1F512;</div>
+        <div class="step-label">Security</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job History -->
+  <div class="section-label" style="margin-bottom: 16px;">// Analysis History</div>
+
+  {% if jobs %}
+  <div class="job-list">
+    {% for job in jobs %}
+    <a href="{{ url_for('report_page', job_id=job.id) }}" class="job-card">
+      {% if job.status == 'complete' %}
+        {% set grade = job.summary.grade if job.summary else '?' %}
+        {% set grade_class = 'grade-a' if grade.startswith('A') else ('grade-b' if grade.startswith('B') else ('grade-c' if grade.startswith('C') else 'grade-d')) %}
+        <div class="job-grade {{ grade_class }}">{{ grade }}</div>
+      {% elif job.status == 'analyzing' or job.status == 'queued' %}
+        <div class="job-grade" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+          <div class="spinner"></div>
+        </div>
+      {% else %}
+        <div class="job-grade grade-f">!</div>
+      {% endif %}
+
+      <div class="job-info">
+        <div class="job-filename">{{ job.filename }}</div>
+        <div class="job-meta">{{ job.created_at[:16] }} &middot; {{ job.status | upper }}</div>
+      </div>
+
+      {% if job.status == 'complete' and job.summary %}
+      <div class="job-scores">
+        {% for dim, score in job.summary.scores.items() %}
+        <div class="score-item">
+          <span class="score-value">{{ '%.1f' | format(score) }}</span>
+          <span>{{ dim[:4] | upper }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">&#x1F50D;</div>
+    <p>No analyses yet. Upload a project to get started.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const progress = document.getElementById('analysisProgress');
+
+// Drag & drop
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('drag-over');
+});
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.classList.remove('drag-over');
+});
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    handleUpload(e.dataTransfer.files[0]);
+  }
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleUpload(fileInput.files[0]);
+});
+
+async function handleUpload(file) {
+  if (!file.name.endsWith('.zip')) {
+    alert('Only .zip files are accepted.');
+    return;
+  }
+
+  // Show progress
+  uploadArea.style.display = 'none';
+  progress.classList.add('active');
+
+  // Set all steps to running
+  ['scalability', 'stability', 'maintainability', 'security'].forEach(d => {
+    document.getElementById('step-' + d).classList.add('running');
+  });
+
+  const formData = new FormData();
+  formData.append('code_file', file);
+
+  try {
+    const resp = await fetch('/analyze', { method: 'POST', body: formData });
+    const data = await resp.json();
+
+    if (data.error) {
+      alert('Error: ' + data.error);
+      uploadArea.style.display = '';
+      progress.classList.remove('active');
+      return;
+    }
+
+    // Poll for completion
+    pollJob(data.job_id);
+  } catch (err) {
+    alert('Upload failed: ' + err.message);
+    uploadArea.style.display = '';
+    progress.classList.remove('active');
+  }
+}
+
+async function pollJob(jobId) {
+  const interval = setInterval(async () => {
+    try {
+      const resp = await fetch('/api/job/' + jobId);
+      const data = await resp.json();
+
+      if (data.status === 'complete') {
+        clearInterval(interval);
+        // Mark all steps done
+        ['scalability', 'stability', 'maintainability', 'security'].forEach(d => {
+          const el = document.getElementById('step-' + d);
+          el.classList.remove('running');
+          el.classList.add('done');
+        });
+        document.getElementById('progressTitle').textContent = 'Analysis complete!';
+
+        setTimeout(() => {
+          window.location.href = '/report/' + jobId;
+        }, 1000);
+
+      } else if (data.status === 'failed') {
+        clearInterval(interval);
+        alert('Analysis failed: ' + (data.error || 'Unknown error'));
+        uploadArea.style.display = '';
+        progress.classList.remove('active');
+      }
+    } catch (err) {
+      // Keep polling
+    }
+  }, 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+You are a senior software architect specializing in system scalability analysis.
+
+Analyze the codebase in the current directory for SCALABILITY.
+
+Evaluate these aspects and assign a score (1-5) for each:
+
+1. **Horizontal Scaling** (1-5): Can the system scale out by adding more instances?
+   - Stateless design? Shared state management?
+   - Session handling (sticky sessions vs distributed sessions)?
+   - Are there singleton bottlenecks?
+
+2. **Database Scalability** (1-5): Can the data layer handle growth?
+   - Query efficiency (N+1 problems, missing indexes, full table scans)?
+   - Connection pooling?
+   - Read/write separation readiness?
+   - Pagination for large datasets?
+
+3. **Async & Concurrency** (1-5): Does it handle concurrent load well?
+   - Async processing for heavy tasks?
+   - Message queue / event-driven patterns?
+   - Rate limiting / throttling?
+
+4. **Resource Efficiency** (1-5): Are resources used efficiently?
+   - Memory leaks or unbounded growth?
+   - Connection management (DB, HTTP, file handles)?
+   - Caching strategy (if applicable)?
+
+IMPORTANT: You must respond ONLY with valid JSON in this exact format:
+{
+  "dimension": "scalability",
+  "overall_score": <float 1.0-5.0>,
+  "sub_scores": {
+    "horizontal_scaling": {"score": <int 1-5>, "findings": ["...", "..."]},
+    "database_scalability": {"score": <int 1-5>, "findings": ["...", "..."]},
+    "async_concurrency": {"score": <int 1-5>, "findings": ["...", "..."]},
+    "resource_efficiency": {"score": <int 1-5>, "findings": ["...", "..."]}
+  },
+  "critical_issues": ["issue1", "issue2"],
+  "recommendations": ["rec1", "rec2"]
+}
+
+Do NOT include any text outside the JSON. No markdown, no explanation, just pure JSON.

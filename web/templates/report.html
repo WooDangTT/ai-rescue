@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Report{% endblock %}
+
+{% block content %}
+<div class="report-page">
+  <!-- Loading State -->
+  <div id="loadingState" style="text-align: center; padding: 100px 20px;">
+    <div class="spinner" style="width: 40px; height: 40px; margin: 0 auto 20px; border-width: 3px;"></div>
+    <p style="color: var(--text-secondary);">Loading analysis results...</p>
+  </div>
+
+  <!-- Report Content (hidden until loaded) -->
+  <div id="reportContent" style="display: none;">
+    <!-- Header -->
+    <div class="report-header">
+      <div class="report-grade-circle" id="gradeCircle">
+        <span class="grade-letter" id="gradeLetter">-</span>
+        <span class="grade-score" id="gradeScore">-/5.0</span>
+      </div>
+      <h1 id="gradeDesc">Loading...</h1>
+      <p class="report-filename" id="reportFilename">{{ job.filename if job else '' }}</p>
+      <p style="color: var(--text-muted); font-size: 0.8rem; font-family: var(--font-mono); margin-top: 8px;" id="reportDate"></p>
+    </div>
+
+    <!-- Score Cards -->
+    <div class="score-cards" id="scoreCards"></div>
+
+    <!-- Liebig's Law -->
+    <div style="background: #fff7ee; border: 1.5px solid #ffddb3; border-radius: var(--radius); padding: 20px 24px; margin-bottom: 40px; font-size: 0.88rem;">
+      <span style="color: var(--accent-warning);">&#x26A0;</span>
+      <strong>Liebig's Law</strong>
+      <span style="color: var(--text-secondary);" id="liebigText">
+        — Overall maturity is limited by the weakest dimension.
+      </span>
+    </div>
+
+    <!-- Paywall Section: Detailed Results -->
+    <div class="paywall-section">
+      <div class="paywall-blur">
+        <div class="section-label">// Detailed Analysis</div>
+        <h2 class="section-title" style="margin-bottom: 24px;">Critical Issues & Recommendations</h2>
+
+        <!-- Fake detailed content -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
+          <h3 style="margin-bottom: 12px;">Scalability - Critical Issues (4)</h3>
+          <p>No rate limiting on public API routes. Zero code splitting across modules. O(N!) combinatorial explosion in synchronous function...</p>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
+          <h3 style="margin-bottom: 12px;">Stability - Critical Issues (7)</h3>
+          <p>API keys hardcoded in source code. No timeout on external API calls. No retry logic for transient failures. No health check endpoint...</p>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px;">
+          <h3 style="margin-bottom: 12px;">Security - Critical Issues (5)</h3>
+          <p>Secrets committed to repository. Missing security headers. External scripts without SRI integrity verification...</p>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;">
+          <h3 style="margin-bottom: 12px;">Recommendations (15)</h3>
+          <p>Implement rate limiting middleware. Add circuit breaker pattern. Move secrets to environment variables. Configure security headers...</p>
+        </div>
+      </div>
+
+      <div class="paywall-overlay">
+        <div class="lock-icon">&#x1F512;</div>
+        <h3>Detailed Analysis Available on Pro Plan</h3>
+        <p>Get critical issues, sub-scores, specific code findings, and<br>actionable recommendations for each dimension.</p>
+        <a href="{{ url_for('pricing') }}" class="btn btn-upgrade">Upgrade to Pro</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const JOB_ID = '{{ job_id }}';
+
+const DIMENSION_META = {
+  scalability: { label: 'Scalability', labelKo: '확장성', icon: '&#x21C5;', color: '#7c5cff' },
+  stability: { label: 'Stability', labelKo: '안정성', icon: '&#x2764;', color: '#00d4aa' },
+  maintainability: { label: 'Maintainability', labelKo: '유지보수성', icon: '&#x270E;', color: '#3da0ff' },
+  security: { label: 'Security', labelKo: '보안성', icon: '&#x1F512;', color: '#ff4466' },
+};
+
+function getGradeClass(grade) {
+  if (grade.startsWith('A')) return 'grade-a';
+  if (grade.startsWith('B')) return 'grade-b';
+  if (grade.startsWith('C')) return 'grade-c';
+  return 'grade-d';
+}
+
+function getGradeColor(grade) {
+  if (grade.startsWith('A')) return '#00d4aa';
+  if (grade.startsWith('B')) return '#3da0ff';
+  if (grade.startsWith('C')) return '#ffb340';
+  return '#ff4466';
+}
+
+function scoreToGrade(score) {
+  if (score >= 4.5) return 'A+';
+  if (score >= 4.0) return 'A';
+  if (score >= 3.5) return 'B+';
+  if (score >= 3.0) return 'B';
+  if (score >= 2.5) return 'C+';
+  if (score >= 2.0) return 'C';
+  if (score >= 1.5) return 'D';
+  return 'F';
+}
+
+async function loadReport() {
+  try {
+    const resp = await fetch('/api/job/' + JOB_ID);
+    const data = await resp.json();
+
+    if (data.status === 'analyzing' || data.status === 'queued') {
+      setTimeout(loadReport, 3000);
+      return;
+    }
+
+    if (data.status === 'failed') {
+      document.getElementById('loadingState').innerHTML =
+        '<p style="color: var(--accent-danger);">Analysis failed: ' + (data.error || 'Unknown error') + '</p>';
+      return;
+    }
+
+    if (data.status !== 'complete') return;
+
+    const summary = data.summary;
+    const gc = getGradeColor(summary.grade);
+
+    // Header
+    document.getElementById('gradeLetter').textContent = summary.grade;
+    document.getElementById('gradeScore').textContent = summary.average.toFixed(1) + '/5.0';
+    document.getElementById('gradeDesc').textContent = summary.grade_desc;
+    document.getElementById('reportFilename').textContent = data.filename;
+    document.getElementById('reportDate').textContent = 'Analyzed: ' + data.created_at.replace('T', ' ').substring(0, 16);
+
+    const circle = document.getElementById('gradeCircle');
+    circle.style.borderColor = gc;
+    circle.style.color = gc;
+    circle.style.boxShadow = '0 0 40px ' + gc + '33';
+
+    // Liebig
+    document.getElementById('liebigText').textContent =
+      '— Overall maturity is limited by the weakest dimension: ' +
+      (DIMENSION_META[summary.weakest]?.labelKo || summary.weakest) +
+      ' (' + summary.weakest_score.toFixed(1) + '/5.0)';
+
+    // Score cards
+    const cardsEl = document.getElementById('scoreCards');
+    cardsEl.innerHTML = '';
+
+    for (const [dim, score] of Object.entries(summary.scores)) {
+      const meta = DIMENSION_META[dim] || { label: dim, icon: '?', color: '#888' };
+      const dimGrade = scoreToGrade(score);
+      const dimColor = getGradeColor(dimGrade);
+      const pct = (score / 5.0 * 100).toFixed(0);
+
+      cardsEl.innerHTML += `
+        <div class="score-card">
+          <div class="score-card-header">
+            <span class="score-card-label">${meta.icon} ${meta.labelKo} (${meta.label})</span>
+            <span class="score-card-grade" style="background: ${dimColor}22; color: ${dimColor};">${dimGrade}</span>
+          </div>
+          <div class="score-card-value" style="color: ${dimColor};">${score.toFixed(1)}<span style="font-size: 0.9rem; opacity: 0.5;">/5.0</span></div>
+          <div class="score-bar">
+            <div class="score-bar-fill" style="width: ${pct}%; background: ${dimColor};"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Show content
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('reportContent').style.display = '';
+
+  } catch (err) {
+    console.error('Failed to load report:', err);
+    setTimeout(loadReport, 5000);
+  }
+}
+
+loadReport();
+</script>
+{% endblock %}

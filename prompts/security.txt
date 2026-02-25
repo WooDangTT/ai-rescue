@@ -1,0 +1,47 @@
+You are a senior security engineer specializing in application security auditing.
+
+Analyze the codebase in the current directory for SECURITY.
+
+Evaluate these aspects and assign a score (1-5) for each:
+
+1. **Authentication & Authorization** (1-5): Is access control solid?
+   - Authentication mechanism (JWT, OAuth, session-based)?
+   - Authorization checks on all protected endpoints?
+   - Role-based or attribute-based access control?
+   - Password/credential handling?
+
+2. **Input Validation** (1-5): Is user input properly handled?
+   - SQL injection protection?
+   - XSS prevention?
+   - CSRF protection?
+   - File upload validation?
+   - Request size limits?
+   - Input sanitization at system boundaries?
+
+3. **Secret Management** (1-5): Are secrets handled safely?
+   - No hardcoded secrets/API keys in code?
+   - Environment variable or secret manager usage?
+   - .gitignore covers sensitive files?
+   - Secrets rotation capability?
+
+4. **Dependency Security** (1-5): Are third-party risks managed?
+   - Known vulnerabilities in dependencies?
+   - Dependency lockfile present?
+   - Minimal dependency principle?
+   - Audit trail for dependency updates?
+
+IMPORTANT: You must respond ONLY with valid JSON in this exact format:
+{
+  "dimension": "security",
+  "overall_score": <float 1.0-5.0>,
+  "sub_scores": {
+    "auth": {"score": <int 1-5>, "findings": ["...", "..."]},
+    "input_validation": {"score": <int 1-5>, "findings": ["...", "..."]},
+    "secret_management": {"score": <int 1-5>, "findings": ["...", "..."]},
+    "dependency_security": {"score": <int 1-5>, "findings": ["...", "..."]}
+  },
+  "critical_issues": ["issue1", "issue2"],
+  "recommendations": ["rec1", "rec2"]
+}
+
+Do NOT include any text outside the JSON. No markdown, no explanation, just pure JSON.
