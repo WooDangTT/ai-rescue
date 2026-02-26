@@ -1,4 +1,4 @@
-import { execFile } from "child_process";
+import { execFile, execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { completeJob, updateJobStatus } from "./db";
@@ -15,9 +15,43 @@ const DIMENSIONS = [
 type Dimension = (typeof DIMENSIONS)[number];
 
 const PROMPTS_DIR = path.resolve(process.cwd(), "prompts");
-const CLAUDE_CLI =
-  process.env.CLAUDE_CLI_PATH || "/Users/grooverider/.local/bin/claude";
 const TIMEOUT_MS = 600_000; // 10 minutes
+
+function findClaudeCli(): string {
+  if (process.env.CLAUDE_CLI_PATH) {
+    return process.env.CLAUDE_CLI_PATH;
+  }
+  try {
+    const resolved = execSync("which claude", { encoding: "utf-8" }).trim();
+    if (resolved) {
+      logger.info(`[analyzer] Claude CLI found at: ${resolved}`);
+      return resolved;
+    }
+  } catch {
+    // which failed
+  }
+  const fallbacks = [
+    path.join(process.env.HOME || "", ".local", "bin", "claude"),
+    "/usr/local/bin/claude",
+    "/usr/bin/claude",
+  ];
+  for (const p of fallbacks) {
+    if (fs.existsSync(p)) {
+      logger.info(`[analyzer] Claude CLI found at fallback: ${p}`);
+      return p;
+    }
+  }
+  logger.error("[analyzer] Claude CLI not found anywhere");
+  return "claude"; // last resort: hope it's in PATH
+}
+
+let _claudeCli: string | null = null;
+function getClaudeCli(): string {
+  if (!_claudeCli) {
+    _claudeCli = findClaudeCli();
+  }
+  return _claudeCli;
+}
 
 function loadPrompt(dimension: Dimension): string {
   const promptPath = path.join(PROMPTS_DIR, `${dimension}.txt`);
@@ -82,7 +116,7 @@ function runClaudeCli(
     delete env.CLAUDE_CODE_ENTRYPOINT;
 
     const child = execFile(
-      CLAUDE_CLI,
+      getClaudeCli(),
       ["--print", "--model", "sonnet", "-p", prompt],
       {
         cwd: repoPath,
