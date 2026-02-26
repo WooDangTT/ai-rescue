@@ -1,7 +1,3 @@
-The changed files are configuration/dependency files only — no new directories or files were added or removed. The project structure remains unchanged. Here is the updated document:
-
----
-
 **Tech Stack**
 - Python 3 + Flask (web service), SQLite (persistence)
 - Claude CLI for AI analysis (4 parallel subprocess calls)
@@ -14,4 +10,33 @@ The changed files are configuration/dependency files only — no new directories
 - `web/app.py` — Flask SaaS with mock OAuth, zip upload, background job processing, Free/Pro plan tiers
 - `web/database.py` — SQLite persistence for users and jobs
 
-**Directory Structure** — Covers CLI entry point, prompt templates, Flask web service, static assets, Jinja2 templates, and Playwright E2E tests with shared helpers.
+**Directory Structure**
+```
+.
+├── main.py                      # CLI entry point
+├── analyzer.py                  # 4-dimension parallel Claude analysis
+├── reporter.py                  # Graded report generation
+├── playwright.config.ts         # Playwright config (port 5050, actionTimeout 15s, navigationTimeout 30s)
+├── package.json
+├── prompts/                     # Claude prompt templates
+│   ├── scalability.txt
+│   ├── stability.txt
+│   ├── maintainability.txt
+│   └── security.txt
+├── web/                         # Flask web service
+│   ├── app.py
+│   ├── database.py
+│   ├── requirements.txt
+│   ├── static/css/style.css
+│   └── templates/               # Jinja2 templates
+│       ├── base.html
+│       ├── index.html
+│       ├── dashboard.html
+│       ├── pricing.html
+│       └── report.html
+├── e2e/                         # Playwright E2E tests
+│   ├── helpers/test-utils.ts    # Shared test helpers
+│   └── tests/home.spec.ts
+└── maestro/                     # Maestro mobile test directory
+    └── tests/                   # Maestro YAML test files
+```
