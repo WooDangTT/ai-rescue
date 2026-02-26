@@ -1,16 +1,25 @@
 import { defineConfig } from "@playwright/test";
 
+const PORT = 5050;
+
 export default defineConfig({
   testDir: "./web/e2e",
-  timeout: 30_000,
+  globalTimeout: 300000,
+  timeout: 60000,
   retries: 0,
+  expect: { timeout: 10000 },
   use: {
-    baseURL: "http://localhost:5050",
+    baseURL: `http://127.0.0.1:${PORT}`,
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
   },
   webServer: {
-    command: "npm install && npm run dev",
-    port: 5050,
+    command: `npm install && npx next dev --hostname 127.0.0.1 -p ${PORT}`,
+    url: `http://127.0.0.1:${PORT}/`,
     cwd: "./web",
+    timeout: 120000,
     reuseExistingServer: !process.env.CI,
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });
