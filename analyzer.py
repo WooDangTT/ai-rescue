@@ -83,7 +83,7 @@ def _run_claude_cli(dimension: str, repo_path: str, prompt: str) -> dict:
     """
     try:
         result = subprocess.run(
-            [CLAUDE_CLI, "--print", "-p", prompt],
+            [CLAUDE_CLI, "--print", "--model", "sonnet", "-p", prompt],
             cwd=repo_path,
             env=_build_env(),
             stdin=subprocess.DEVNULL,

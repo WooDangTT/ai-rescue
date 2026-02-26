@@ -82,7 +82,7 @@ function runClaudeCli(
 
     const child = execFile(
       CLAUDE_CLI,
-      ["--print", "-p", prompt],
+      ["--print", "--model", "sonnet", "-p", prompt],
       {
         cwd: repoPath,
         env,
