@@ -14,7 +14,7 @@ const DIMENSIONS = [
 
 type Dimension = (typeof DIMENSIONS)[number];
 
-const PROMPTS_DIR = path.resolve(process.cwd(), "..", "prompts");
+const PROMPTS_DIR = path.resolve(process.cwd(), "prompts");
 const CLAUDE_CLI =
   process.env.CLAUDE_CLI_PATH || "/Users/grooverider/.local/bin/claude";
 const TIMEOUT_MS = 600_000; // 10 minutes
