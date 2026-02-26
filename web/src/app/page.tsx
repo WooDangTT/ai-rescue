@@ -9,20 +9,20 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="hero">
-        <div className="hero-badge">
+      <section className="hero" data-testid="hero">
+        <div className="hero-badge" data-testid="heroBadge">
           <span className="dot"></span>
           AI-Powered Code Analysis
         </div>
 
-        <h1>
+        <h1 data-testid="heroTitle">
           Your Code&apos;s<br />
           <span className="gradient-text">Long-Term Health</span>
           <br />
           Score
         </h1>
 
-        <p className="hero-subtitle">
+        <p className="hero-subtitle" data-testid="heroSubtitle">
           AI가 코드를 4가지 핵심 차원에서 분석합니다.
           <br />
           확장성, 안정성, 유지보수성, 보안성 — 코드의 장기적 완성도를 한눈에.
@@ -35,7 +35,7 @@ export default async function HomePage() {
             </Link>
           ) : (
             <>
-              <Link href="/api/auth/login" className="btn btn-google">
+              <Link href="/api/auth/login" className="btn btn-google" data-testid="heroCtaSignIn">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -65,7 +65,7 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="features-section" id="features">
+      <section className="features-section" id="features" data-testid="featuresSection">
         <div className="section-label">// Analysis Dimensions</div>
         <h2 className="section-title">4 Dimensions of Code Maturity</h2>
 
@@ -109,7 +109,7 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="features-section">
+      <section className="features-section" data-testid="howItWorksSection">
         <div className="section-label">// How it works</div>
         <h2 className="section-title">Simple 3-Step Process</h2>
 

@@ -35,7 +35,7 @@ export default async function RootLayout({
       <body>
         <Navbar user={user} />
         {children}
-        <footer className="footer">
+        <footer className="footer" data-testid="footer">
           AI RESCUE v1.0 &middot; Code Maturity Assessment Tool &middot;
           Powered by Claude AI
         </footer>

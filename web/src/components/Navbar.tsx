@@ -7,8 +7,8 @@ interface NavbarProps {
 
 export default function Navbar({ user }: NavbarProps) {
   return (
-    <nav className="navbar">
-      <Link href="/" className="nav-brand">
+    <nav className="navbar" data-testid="navbar">
+      <Link href="/" className="nav-brand" data-testid="navBrand">
         <span className="logo-icon">R</span>
         AI RESCUE
       </Link>
