@@ -5,7 +5,7 @@ import { clearSession } from "@/lib/session";
 import { logger } from "@/utils/logger";
 
 export async function GET() {
-  logger.info("[auth] User logged out");
+  logger.debug("[auth] User logged out");
   await clearSession();
   return new NextResponse(null, {
     status: 302,

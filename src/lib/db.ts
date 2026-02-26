@@ -49,7 +49,7 @@ function initDb(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
   `);
-  logger.info("[db] Database initialized at", DB_PATH);
+  logger.debug("[db] Database initialized at", DB_PATH);
 }
 
 // ── User operations ──────────────────────────────────────
