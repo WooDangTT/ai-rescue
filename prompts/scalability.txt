@@ -25,7 +25,8 @@ Evaluate these aspects and assign a score (1-5) for each:
    - Connection management (DB, HTTP, file handles)?
    - Caching strategy (if applicable)?
 
-IMPORTANT: You must respond ONLY with valid JSON in this exact format:
+IMPORTANT: All text values in the JSON (findings, critical_issues, recommendations) MUST be written in Korean (한국어).
+You must respond ONLY with valid JSON in this exact format:
 {
   "dimension": "scalability",
   "overall_score": <float 1.0-5.0>,

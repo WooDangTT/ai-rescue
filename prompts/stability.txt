@@ -30,7 +30,8 @@ Evaluate these aspects and assign a score (1-5) for each:
    - Graceful shutdown handling?
    - Auto-restart / self-healing?
 
-IMPORTANT: You must respond ONLY with valid JSON in this exact format:
+IMPORTANT: All text values in the JSON (findings, critical_issues, recommendations) MUST be written in Korean (한국어).
+You must respond ONLY with valid JSON in this exact format:
 {
   "dimension": "stability",
   "overall_score": <float 1.0-5.0>,
