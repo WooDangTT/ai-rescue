@@ -1,8 +1,6 @@
-The `playwright.config.ts` change is a configuration-only update (port default, timeouts, retry settings) with no new files or directories added or removed. The project structure remains unchanged.
+The changed files are configuration/dependency files only — no new directories or files were added or removed. The project structure remains unchanged. Here is the updated document:
 
 ---
-
-The `project_structure.md` has been generated at the project root. Here's a summary of what was captured:
 
 **Tech Stack**
 - Python 3 + Flask (web service), SQLite (persistence)
