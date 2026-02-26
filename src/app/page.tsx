@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getSessionUserId } from "@/lib/session";
 import { getUser } from "@/lib/db";
-import AdBanner from "@/components/AdBanner";
+
 
 export const metadata: Metadata = {
   title: "AI RESCUE - AI-Powered Code Maturity Assessment",
@@ -72,11 +72,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Ad placement 1 */}
-      <div style={{ maxWidth: "728px", margin: "0 auto 32px", padding: "0 16px" }}>
-        <AdBanner testId="adBannerHero" />
-      </div>
-
       {/* Features */}
       <section className="features-section" id="features" data-testid="featuresSection">
         <div className="section-label">// Analysis Dimensions</div>
@@ -120,11 +115,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Ad placement 2 */}
-      <div style={{ maxWidth: "728px", margin: "0 auto 32px", padding: "0 16px" }}>
-        <AdBanner testId="adBannerFeatures" />
-      </div>
 
       {/* How it works */}
       <section className="features-section" data-testid="howItWorksSection">

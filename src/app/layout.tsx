@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { getSessionUserId } from "@/lib/session";
@@ -79,13 +79,11 @@ export default async function RootLayout({
     console.error = function() {
       var msg = Array.from(arguments).join(' ');
       var downgradeKeywords = [
-        'adsbygoogle', 'TagError', 'availableWidth', 'no_div',
         'hydration', 'Hydration', 'server rendered HTML',
         'did not match', 'crosspilot', 'removeChild',
         'react.dev/errors/418', 'react.dev/errors/419',
         'react.dev/errors/422', 'react.dev/errors/423',
-        'Minified React error', '[Uncaught]', '[UnhandledRejection]',
-        'googlesyndication'
+        'Minified React error', '[Uncaught]', '[UnhandledRejection]'
       ];
       if (downgradeKeywords.some(function(k) { return msg.includes(k); })) {
         console.warn.apply(console, ['[WARN-DOWNGRADED]'].concat(Array.from(arguments)));
@@ -97,8 +95,6 @@ export default async function RootLayout({
       var msg = String(message || '');
       var src = String(source || '');
       var filterKeywords = [
-        'adsbygoogle', 'TagError', 'availableWidth', 'no_div',
-        'googlesyndication', 'pagead',
         'hydration', 'Hydration', 'server rendered HTML', 'did not match',
         'crosspilot', 'Minified React error', 'react.dev/errors/'
       ];
@@ -110,7 +106,6 @@ export default async function RootLayout({
     window.addEventListener('error', function(e) {
       var msg = (e.message || '') + ' ' + (e.filename || '') + ' ' + ((e.error && e.error.stack) || '');
       var filterKeywords = [
-        'adsbygoogle', 'googlesyndication', 'no_div',
         'hydration', 'Hydration', 'removeChild',
         'react.dev/errors/', 'Minified React error',
         '[Uncaught]'
@@ -120,12 +115,6 @@ export default async function RootLayout({
         e.stopImmediatePropagation();
       }
     }, true);
-    window.addEventListener('unhandledrejection', function(e) {
-      var msg = String(e.reason || '');
-      if (msg === '[object Event]' || msg.includes('googlesyndication') || msg.includes('adsbygoogle')) {
-        e.preventDefault();
-      }
-    });
   })();
 `}} />
       </head>
@@ -136,17 +125,11 @@ export default async function RootLayout({
           AI RESCUE v1.0 &middot; Code Maturity Assessment Tool &middot;
           Powered by Claude AI
         </footer>
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1568162576697577"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-        <Script
+        <script
           src="https://logs.jan2s.ai/log-sdk.js"
           data-project-id="42"
           data-app="web"
-          strategy="afterInteractive"
+          defer
         />
       </body>
     </html>

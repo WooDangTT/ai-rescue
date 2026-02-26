@@ -22,8 +22,6 @@ export function isExternalError(message: string): boolean {
     'cdn',
     'analytics',
     'gtag',
-    'adsbygoogle',
-    'googlesyndication',
     'doubleclick',
     'facebook',
     'twitter',

@@ -188,13 +188,12 @@ a:hover { color: var(--accent-orange); }
 
 /* ── Hero Section ──────────────────────────────────────────── */
 .hero {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 120px 24px 80px;
+  padding: 140px 24px 60px;
   position: relative;
   overflow: hidden;
   background: var(--gradient-hero-bg);
@@ -274,7 +273,7 @@ a:hover { color: var(--accent-orange); }
 
 /* ── Features Grid ─────────────────────────────────────────── */
 .features-section {
-  padding: 80px 24px;
+  padding: 48px 24px;
   max-width: 1440px;
   margin: 0 auto;
 }
