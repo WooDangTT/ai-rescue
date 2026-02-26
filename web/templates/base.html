@@ -11,8 +11,8 @@
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar">
-    <a href="{{ url_for('index') }}" class="nav-brand">
+  <nav class="navbar" data-testid="navbar">
+    <a href="{{ url_for('index') }}" class="nav-brand" data-testid="navBrand">
       <span class="logo-icon">R</span>
       AI RESCUE
     </a>
@@ -35,7 +35,7 @@
   {% block content %}{% endblock %}
 
   <!-- Footer -->
-  <footer class="footer">
+  <footer class="footer" data-testid="footer">
     AI RESCUE v1.0 &middot; Code Maturity Assessment Tool &middot; Powered by Claude AI
   </footer>
 
