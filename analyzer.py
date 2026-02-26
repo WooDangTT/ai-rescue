@@ -72,19 +72,15 @@ def _extract_json(text: str) -> Optional[dict]:
     return None
 
 
-def analyze_dimension(dimension: str, repo_path: str) -> dict:
-    """Run Claude CLI analysis for a single dimension.
+TIMEOUT_SECONDS = 600  # 10 minutes per dimension
 
-    Args:
-        dimension: One of 'scalability', 'stability', 'maintainability', 'security'
-        repo_path: Absolute path to the cloned repository
+
+def _run_claude_cli(dimension: str, repo_path: str, prompt: str) -> dict:
+    """Execute a single Claude CLI call for a dimension.
 
     Returns:
-        Parsed JSON result dict, or error dict on failure
+        Parsed JSON result dict, or error dict on failure.
     """
-    logger.info("Starting analysis: dimension=%s, repo=%s", dimension, repo_path)
-    prompt = _load_prompt(dimension)
-
     try:
         result = subprocess.run(
             [CLAUDE_CLI, "--print", "-p", prompt],
@@ -93,7 +89,7 @@ def analyze_dimension(dimension: str, repo_path: str) -> dict:
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=300,
+            timeout=TIMEOUT_SECONDS,
             text=True,
         )
         logger.debug(
@@ -131,10 +127,10 @@ def analyze_dimension(dimension: str, repo_path: str) -> dict:
         return parsed
 
     except subprocess.TimeoutExpired:
-        logger.error("Claude CLI timeout: dimension=%s", dimension)
+        logger.error("Claude CLI timeout: dimension=%s (limit=%ds)", dimension, TIMEOUT_SECONDS)
         return {
             "dimension": dimension,
-            "error": "Analysis timed out (300s limit)",
+            "error": f"Analysis timed out ({TIMEOUT_SECONDS}s limit)",
         }
     except Exception as e:
         logger.error("Unexpected error: dimension=%s, error=%s", dimension, e)
@@ -142,6 +138,39 @@ def analyze_dimension(dimension: str, repo_path: str) -> dict:
             "dimension": dimension,
             "error": str(e),
         }
+
+
+def analyze_dimension(dimension: str, repo_path: str) -> dict:
+    """Run Claude CLI analysis for a single dimension with 1 retry on failure.
+
+    Args:
+        dimension: One of 'scalability', 'stability', 'maintainability', 'security'
+        repo_path: Absolute path to the cloned repository
+
+    Returns:
+        Parsed JSON result dict, or error dict on failure
+    """
+    logger.info("Starting analysis: dimension=%s, repo=%s", dimension, repo_path)
+    prompt = _load_prompt(dimension)
+
+    result = _run_claude_cli(dimension, repo_path, prompt)
+
+    # Retry once if first attempt failed
+    if "error" in result:
+        logger.warning(
+            "First attempt failed for dimension=%s, retrying... (error: %s)",
+            dimension, result.get("error", "unknown"),
+        )
+        result = _run_claude_cli(dimension, repo_path, prompt)
+        if "error" not in result:
+            logger.info("Retry succeeded for dimension=%s", dimension)
+        else:
+            logger.error(
+                "Retry also failed for dimension=%s: %s",
+                dimension, result.get("error", "unknown"),
+            )
+
+    return result
 
 
 def analyze_all(repo_path: str) -> List[dict]:

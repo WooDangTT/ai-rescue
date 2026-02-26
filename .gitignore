@@ -1,5 +1,12 @@
 __pycache__/
 *.pyc
 *.db
+*.db-shm
+*.db-wal
 .env
+
+# Node.js
 node_modules/
+.next/
+next-env.d.ts
+.next/types/**/*.ts
