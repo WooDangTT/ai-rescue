@@ -19,7 +19,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: `python3 web/app.py`,
+    command: `pip install -r web/requirements.txt && python3 web/app.py`,
     url: `http://127.0.0.1:${PORT}/`,
     timeout: 120000,
     reuseExistingServer: true,
