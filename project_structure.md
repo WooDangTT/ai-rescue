@@ -1,4 +1,4 @@
-Based on my analysis of the changed files, here is the updated project structure document:
+The two changed files (`src/app/api/auth/logout/route.ts` and `src/lib/db.ts`) are modifications to existing files with no structural changes — no new files added, no files removed. The structure document remains unchanged.
 
 **Tech Stack**
 - Python 3 (CLI tools: `analyzer.py`, `reporter.py`)
