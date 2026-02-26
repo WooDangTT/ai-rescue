@@ -1,15 +1,24 @@
 import Database from "better-sqlite3";
+import fs from "fs";
 import path from "path";
+import { logger } from "@/utils/logger";
 
-const DB_PATH = path.join(process.cwd(), "ai_rescue.db");
+const DATA_DIR = path.join(process.cwd(), "data");
+const DB_PATH = path.join(DATA_DIR, "ai_rescue.db");
 
 let _db: Database.Database | null = null;
 
 function getDb(): Database.Database {
   if (!_db) {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
     _db = new Database(DB_PATH);
     _db.pragma("journal_mode = WAL");
     _db.pragma("foreign_keys = ON");
+    _db.pragma("synchronous = NORMAL");
+    _db.pragma("busy_timeout = 5000");
+    _db.pragma("cache_size = -20000");
     initDb(_db);
   }
   return _db;
@@ -40,7 +49,7 @@ function initDb(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
   `);
-  console.log("[db] Database initialized at", DB_PATH);
+  logger.info("[db] Database initialized at", DB_PATH);
 }
 
 // ── User operations ──────────────────────────────────────

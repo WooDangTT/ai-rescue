@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { completeJob, updateJobStatus } from "./db";
 import { getGrade } from "./grades";
+import { logger } from "@/utils/logger";
 
 const DIMENSIONS = [
   "scalability",
@@ -92,7 +93,7 @@ function runClaudeCli(
       (error, stdout, stderr) => {
         if (error) {
           if (error.killed || error.code === "ETIMEDOUT") {
-            console.error(
+            logger.error(
               `[analyzer] Claude CLI timeout: dimension=${dimension}`
             );
             resolve({
@@ -101,7 +102,7 @@ function runClaudeCli(
             });
             return;
           }
-          console.error(
+          logger.error(
             `[analyzer] Claude CLI error: dimension=${dimension}, error=${error.message}, stderr=${stderr?.slice(0, 500)}`
           );
           resolve({
@@ -113,7 +114,7 @@ function runClaudeCli(
 
         const parsed = extractJson(stdout);
         if (!parsed) {
-          console.error(
+          logger.error(
             `[analyzer] Failed to parse JSON: dimension=${dimension}, output=${stdout.slice(0, 500)}`
           );
           resolve({
@@ -124,7 +125,7 @@ function runClaudeCli(
           return;
         }
 
-        console.log(
+        logger.info(
           `[analyzer] Analysis complete: dimension=${dimension}, score=${(parsed as Record<string, number>).overall_score?.toFixed(1)}`
         );
         resolve(parsed);
@@ -140,7 +141,7 @@ async function analyzeDimension(
   dimension: Dimension,
   repoPath: string
 ): Promise<Record<string, unknown>> {
-  console.log(
+  logger.info(
     `[analyzer] Starting analysis: dimension=${dimension}, repo=${repoPath}`
   );
   const prompt = loadPrompt(dimension);
@@ -149,14 +150,14 @@ async function analyzeDimension(
 
   // Retry once if first attempt failed
   if ("error" in result) {
-    console.warn(
+    logger.warn(
       `[analyzer] First attempt failed for dimension=${dimension}, retrying...`
     );
     result = await runClaudeCli(dimension, repoPath, prompt);
     if (!("error" in result)) {
-      console.log(`[analyzer] Retry succeeded for dimension=${dimension}`);
+      logger.info(`[analyzer] Retry succeeded for dimension=${dimension}`);
     } else {
-      console.error(
+      logger.error(
         `[analyzer] Retry also failed for dimension=${dimension}`
       );
     }
@@ -168,7 +169,7 @@ async function analyzeDimension(
 async function analyzeAll(
   repoPath: string
 ): Promise<Record<string, unknown>[]> {
-  console.log(
+  logger.info(
     `[analyzer] Starting parallel analysis for all dimensions: repo=${repoPath}`
   );
 
@@ -176,7 +177,7 @@ async function analyzeAll(
     DIMENSIONS.map((dim) => analyzeDimension(dim, repoPath))
   );
 
-  console.log(
+  logger.info(
     `[analyzer] All analyses complete: ${results.length} results collected`
   );
   return results;
@@ -188,7 +189,7 @@ export function analyzeInBackground(
   codeDirPath: string
 ): void {
   (async () => {
-    console.log(`[analyzer] Background analysis started: job_id=${jobId}`);
+    logger.info(`[analyzer] Background analysis started: job_id=${jobId}`);
     updateJobStatus(jobId, "analyzing");
 
     try {
@@ -211,7 +212,7 @@ export function analyzeInBackground(
       );
 
       if (failedDims.length > 0) {
-        console.warn(
+        logger.warn(
           `[analyzer] Some dimensions failed: ${failedDims.join(", ")} (job_id=${jobId})`
         );
       }
@@ -246,18 +247,18 @@ export function analyzeInBackground(
         summary,
         results as Record<string, unknown>[]
       );
-      console.log(
+      logger.info(
         `[analyzer] Analysis complete: job_id=${jobId}, grade=${grade}`
       );
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      console.error(
+      logger.error(
         `[analyzer] Analysis failed: job_id=${jobId}, error=${errorMsg}`
       );
       updateJobStatus(jobId, "failed", errorMsg);
     } finally {
       // Cleanup code directory
-      console.log(`[analyzer] Cleaning up code directory: ${codeDirPath}`);
+      logger.info(`[analyzer] Cleaning up code directory: ${codeDirPath}`);
       fs.rmSync(codeDirPath, { recursive: true, force: true });
     }
   })();

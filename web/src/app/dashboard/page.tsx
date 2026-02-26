@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/session";
 import { getUser, getUserJobs, Job } from "@/lib/db";
 import DashboardClient from "./DashboardClient";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "코드 분석 결과를 확인하고 새로운 프로젝트를 업로드하세요.",
+};
 
 function getGradeClass(grade: string): string {
   if (grade.startsWith("A")) return "grade-a";

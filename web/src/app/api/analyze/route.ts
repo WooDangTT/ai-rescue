@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { execSync } from "child_process";
 import fs from "fs";
@@ -7,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createJob, getUser } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
 import { analyzeInBackground } from "@/lib/analyzer";
+import { logger } from "@/utils/logger";
 
 export async function POST(request: NextRequest) {
   const userId = await getSessionUserId();
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   // Create temp directory and extract
   const codeDir = fs.mkdtempSync(path.join(os.tmpdir(), "ai_rescue_web_"));
-  console.log(`[analyze] Extracting uploaded file to ${codeDir}`);
+  logger.info(`[analyze] Extracting uploaded file to ${codeDir}`);
 
   try {
     const zipPath = path.join(codeDir, "_upload.zip");
@@ -64,15 +67,15 @@ export async function POST(request: NextRequest) {
         );
       }
       fs.rmdirSync(inner);
-      console.log(`[analyze] Flattened single root folder: ${entries[0]}`);
+      logger.info(`[analyze] Flattened single root folder: ${entries[0]}`);
     }
 
-    console.log(
+    logger.info(
       `[analyze] Extraction complete: ${fs.readdirSync(codeDir).length} files`
     );
   } catch (e) {
     fs.rmSync(codeDir, { recursive: true, force: true });
-    console.error(`[analyze] Extraction failed: ${e}`);
+    logger.error(`[analyze] Extraction failed: ${e}`);
     return NextResponse.json(
       { error: "Failed to extract zip file" },
       { status: 400 }
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
   // Start background analysis
   analyzeInBackground(jobId, codeDir);
 
-  console.log(
+  logger.info(
     `[analyze] Analysis queued: job_id=${jobId}, filename=${file.name}`
   );
   return NextResponse.json({ job_id: jobId, status: "queued" });

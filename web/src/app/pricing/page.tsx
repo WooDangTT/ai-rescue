@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getSessionUserId } from "@/lib/session";
 import { getUser } from "@/lib/db";
 import { FreePlanButton, ProPlanButton } from "./PricingClient";
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description:
+    "Free 플랜으로 등급을 확인하고, Pro 플랜에서 상세 분석과 권장사항을 받아보세요.",
+};
 
 export default async function PricingPage() {
   const userId = await getSessionUserId();

@@ -1,6 +1,9 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getUser, updateUserPlan } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
+import { logger } from "@/utils/logger";
 
 export async function POST(request: NextRequest) {
   const userId = await getSessionUserId();
@@ -21,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   const updated = updateUserPlan(user.id, plan);
-  console.log(`[plan] User plan updated: user_id=${user.id}, plan=${plan}`);
+  logger.info(`[plan] User plan updated: user_id=${user.id}, plan=${plan}`);
 
   return NextResponse.json({
     plan: updated?.plan,

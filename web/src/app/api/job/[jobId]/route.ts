@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getJob, getUser } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
