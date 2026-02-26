@@ -23,10 +23,23 @@ export function isExternalError(message: string): boolean {
     'analytics',
     'gtag',
     'adsbygoogle',
+    'googlesyndication',
     'doubleclick',
     'facebook',
     'twitter',
+    'TagError',
+    'availableWidth',
+    'no_div',
+    'hydration',
+    'Hydration',
+    'server rendered HTML',
+    'did not match',
+    'crosspilot',
+    'removeChild',
+    'react.dev/errors/',
+    'Minified React error',
+    '[Uncaught]',
+    '[UnhandledRejection]',
   ];
-  const lower = message.toLowerCase();
-  return externalPatterns.some((pattern) => lower.includes(pattern));
+  return externalPatterns.some((pattern) => message.includes(pattern));
 }
