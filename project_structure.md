@@ -1,3 +1,7 @@
+The `playwright.config.ts` change is a configuration-only update (port default, timeouts, retry settings) with no new files or directories added or removed. The project structure remains unchanged.
+
+---
+
 The `project_structure.md` has been generated at the project root. Here's a summary of what was captured:
 
 **Tech Stack**
