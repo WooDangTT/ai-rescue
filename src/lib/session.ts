@@ -9,9 +9,10 @@ export async function getSessionUserId(): Promise<string | null> {
 
 export async function setSessionUserId(userId: string): Promise<void> {
   const cookieStore = await cookies();
+  const useSecure = process.env.COOKIE_SECURE === "true";
   cookieStore.set(COOKIE_NAME, userId, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: useSecure,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30, // 30 days
