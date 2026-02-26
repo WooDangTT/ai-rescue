@@ -8,7 +8,7 @@ export default defineConfig({
     baseURL: "http://localhost:5050",
   },
   webServer: {
-    command: "npm run dev",
+    command: "npm install && npm run dev",
     port: 5050,
     cwd: "./web",
     reuseExistingServer: !process.env.CI,
