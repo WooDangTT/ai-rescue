@@ -641,7 +641,7 @@ a:hover { color: var(--accent-orange); }
   box-shadow: var(--shadow-soft);
 }
 .detail-dimension-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: baseline; justify-content: space-between;
   margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
 }
 .detail-dimension-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -662,27 +662,27 @@ a:hover { color: var(--accent-orange); }
   padding: 4px 0; list-style: none; padding-left: 16px; position: relative;
 }
 .findings-list li::before {
-  content: ''; position: absolute; left: 0; top: 12px;
+  content: ''; position: absolute; left: 0; top: 0.65em;
   width: 5px; height: 5px; border-radius: 50%; background: var(--text-muted);
 }
 
 .critical-issues { margin-bottom: 16px; }
 .critical-item {
-  display: flex; align-items: flex-start; gap: 10px;
+  display: flex; align-items: baseline; gap: 10px;
   padding: 10px 14px; margin-bottom: 8px;
   background: #fff0f2; border: 1px solid #ffc0cb; border-radius: var(--radius-sm);
   font-size: 0.85rem; color: #8b2035; line-height: 1.6;
 }
-.critical-item .critical-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 2px; }
+.critical-item .critical-icon { flex-shrink: 0; }
 
 .recommendations { }
 .rec-item {
-  display: flex; align-items: flex-start; gap: 10px;
+  display: flex; align-items: baseline; gap: 10px;
   padding: 10px 14px; margin-bottom: 8px;
   background: var(--bg-mint); border: 1px solid rgba(0, 201, 167, 0.2); border-radius: var(--radius-sm);
   font-size: 0.85rem; color: #0a6b58; line-height: 1.6;
 }
-.rec-item .rec-icon { flex-shrink: 0; margin-top: 2px; }
+.rec-item .rec-icon { flex-shrink: 0; }
 
 /* ── Paywall Overlay ───────────────────────────────────────── */
 .paywall-section {
@@ -788,7 +788,7 @@ a:hover { color: var(--accent-orange); }
   padding: 9px 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: baseline; gap: 12px;
 }
 .pricing-features li .check { color: var(--accent-emerald); font-weight: 800; font-size: 1.1rem; }
 
