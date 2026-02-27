@@ -28,8 +28,10 @@ function initDb(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
+      google_id TEXT UNIQUE,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
+      picture TEXT,
       plan TEXT NOT NULL DEFAULT 'free',
       created_at TEXT NOT NULL
     );
@@ -49,6 +51,20 @@ function initDb(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
   `);
+
+  // Migration: add google_id, picture columns if missing (existing DB)
+  const cols = db.pragma("table_info(users)") as { name: string }[];
+  const colNames = new Set(cols.map((c) => c.name));
+  if (!colNames.has("google_id")) {
+    db.exec("ALTER TABLE users ADD COLUMN google_id TEXT");
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)");
+    logger.info("[db] Migrated: added google_id column");
+  }
+  if (!colNames.has("picture")) {
+    db.exec("ALTER TABLE users ADD COLUMN picture TEXT");
+    logger.info("[db] Migrated: added picture column");
+  }
+
   logger.debug("[db] Database initialized at", DB_PATH);
 }
 
@@ -56,8 +72,10 @@ function initDb(db: Database.Database): void {
 
 export interface User {
   id: string;
+  google_id: string | null;
   name: string;
   email: string;
+  picture: string | null;
   plan: string;
   created_at: string;
 }
@@ -85,6 +103,33 @@ export function upsertUser(
     ).run(userId, name, email, plan, new Date().toISOString());
   }
 
+  return db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as User;
+}
+
+export function upsertGoogleUser(
+  googleId: string,
+  name: string,
+  email: string,
+  picture: string | null
+): User {
+  const db = getDb();
+  const existing = db
+    .prepare("SELECT * FROM users WHERE google_id = ?")
+    .get(googleId) as User | undefined;
+
+  if (existing) {
+    db.prepare(
+      "UPDATE users SET name = ?, email = ?, picture = ? WHERE google_id = ?"
+    ).run(name, email, picture, googleId);
+    return db
+      .prepare("SELECT * FROM users WHERE google_id = ?")
+      .get(googleId) as User;
+  }
+
+  const userId = `google-${googleId}`;
+  db.prepare(
+    "INSERT INTO users (id, google_id, name, email, picture, plan, created_at) VALUES (?, ?, ?, ?, ?, 'free', ?)"
+  ).run(userId, googleId, name, email, picture, new Date().toISOString());
   return db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as User;
 }
 

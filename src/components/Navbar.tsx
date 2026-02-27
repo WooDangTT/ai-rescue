@@ -22,6 +22,16 @@ export default function Navbar({ user }: NavbarProps) {
               Pricing
             </Link>
             <div className="nav-user">
+              {user.picture && (
+                <img
+                  src={user.picture}
+                  alt=""
+                  width={24}
+                  height={24}
+                  style={{ borderRadius: "50%" }}
+                  referrerPolicy="no-referrer"
+                />
+              )}
               <span>{user.name}</span>
               <span className={`tag tag-${user.plan}`}>
                 {user.plan.toUpperCase()}
