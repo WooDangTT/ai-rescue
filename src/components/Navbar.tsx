@@ -36,9 +36,9 @@ export default function Navbar({ user }: NavbarProps) {
               <span className={`tag tag-${user.plan}`}>
                 {user.plan.toUpperCase()}
               </span>
-              <Link href="/api/auth/logout" className="btn btn-ghost btn-sm">
+              <a href="/api/auth/logout" className="btn btn-ghost btn-sm">
                 Logout
-              </Link>
+              </a>
             </div>
           </>
         ) : (
@@ -46,9 +46,9 @@ export default function Navbar({ user }: NavbarProps) {
             <Link href="/pricing" className="btn btn-ghost btn-sm">
               Pricing
             </Link>
-            <Link href="/api/auth/login" className="btn btn-primary btn-sm">
+            <a href="/api/auth/login" className="btn btn-primary btn-sm">
               Sign In
-            </Link>
+            </a>
           </>
         )}
       </div>

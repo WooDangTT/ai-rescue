@@ -45,7 +45,7 @@ export default async function HomePage() {
             </Link>
           ) : (
             <>
-              <Link href="/api/auth/login" className="btn btn-google" data-testid="heroCtaSignIn">
+              <a href="/api/auth/login" className="btn btn-google" data-testid="heroCtaSignIn">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -65,7 +65,7 @@ export default async function HomePage() {
                   />
                 </svg>
                 Sign in with Google
-              </Link>
+              </a>
               <a href="#features" className="btn btn-ghost">
                 Learn More
               </a>
