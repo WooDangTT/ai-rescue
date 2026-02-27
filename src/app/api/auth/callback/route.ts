@@ -104,10 +104,16 @@ export async function GET(request: Request) {
     );
     logger.info("[auth] User upserted:", user.id);
 
-    // Set session cookie directly on redirect response
+    // Return HTML page with Set-Cookie headers + client-side redirect.
+    // Using 200 response instead of 307 redirect because browsers/Next.js
+    // may not persist cookies set on redirect responses reliably.
     const redirectUrl = `${baseUrl}/dashboard`;
-    const response = NextResponse.redirect(redirectUrl);
     const useSecure = process.env.COOKIE_SECURE === "true";
+    const html = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head><body><script>window.location.href="${redirectUrl}";</script></body></html>`;
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html" },
+    });
     response.cookies.set("ai_rescue_user_id", user.id, {
       httpOnly: true,
       secure: useSecure,
@@ -115,11 +121,9 @@ export async function GET(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
-    // Clean up oauth_state cookie
     response.cookies.delete("oauth_state");
 
-    logger.info("[auth] Redirect to:", redirectUrl, "secure:", useSecure);
-    logger.info("[auth] Set-Cookie headers:", response.headers.getSetCookie());
+    logger.info("[auth] HTML redirect to:", redirectUrl, "secure:", useSecure);
 
     return response;
   } catch (err) {
