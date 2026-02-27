@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { upsertGoogleUser } from "@/lib/db";
 import { logger } from "@/utils/logger";
 
@@ -104,29 +105,25 @@ export async function GET(request: Request) {
     );
     logger.info("[auth] User upserted:", user.id);
 
-    // Return HTML page with Set-Cookie headers + client-side redirect.
-    // Using 200 response instead of 307 redirect because browsers/Next.js
-    // may not persist cookies set on redirect responses reliably.
-    const redirectUrl = `${baseUrl}/dashboard`;
+    // Set cookies via cookies() API and redirect via next/navigation
     const useSecure = process.env.COOKIE_SECURE === "true";
-    const html = `<!DOCTYPE html><html><head></head><body><p>Redirecting...</p><script>setTimeout(function(){window.location.href="${redirectUrl}"},100);</script></body></html>`;
-    const response = new NextResponse(html, {
-      status: 200,
-      headers: { "Content-Type": "text/html" },
-    });
-    response.cookies.set("ai_rescue_user_id", user.id, {
+    cookieStore.set("ai_rescue_user_id", user.id, {
       httpOnly: true,
       secure: useSecure,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
-    response.cookies.delete("oauth_state");
+    cookieStore.delete("oauth_state");
 
-    logger.info("[auth] HTML redirect to:", redirectUrl, "secure:", useSecure);
+    logger.info("[auth] Redirecting to dashboard, secure:", useSecure);
 
-    return response;
-  } catch (err) {
+    redirect(`${baseUrl}/dashboard`);
+  } catch (err: unknown) {
+    // redirect() throws a special error — re-throw it
+    if (err instanceof Error && err.message?.includes("NEXT_REDIRECT")) {
+      throw err;
+    }
     logger.error("[auth] OAuth callback error:", err);
     return NextResponse.redirect(`${baseUrl}/?error=server_error`);
   }
