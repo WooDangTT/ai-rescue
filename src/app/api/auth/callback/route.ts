@@ -41,10 +41,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
   }
 
-  // Verify CSRF state
+  // Verify CSRF state (read-only from cookies, don't modify via cookies() API)
   const cookieStore = await cookies();
   const savedState = cookieStore.get("oauth_state")?.value;
-  cookieStore.delete("oauth_state");
 
   if (!savedState || savedState !== state) {
     logger.warn("[auth] CSRF state mismatch");
@@ -106,7 +105,8 @@ export async function GET(request: Request) {
     logger.info("[auth] User upserted:", user.id);
 
     // Set session cookie directly on redirect response
-    const response = NextResponse.redirect(`${baseUrl}/dashboard`);
+    const redirectUrl = `${baseUrl}/dashboard`;
+    const response = NextResponse.redirect(redirectUrl);
     const useSecure = process.env.COOKIE_SECURE === "true";
     response.cookies.set("ai_rescue_user_id", user.id, {
       httpOnly: true,
@@ -117,6 +117,9 @@ export async function GET(request: Request) {
     });
     // Clean up oauth_state cookie
     response.cookies.delete("oauth_state");
+
+    logger.info("[auth] Redirect to:", redirectUrl, "secure:", useSecure);
+    logger.info("[auth] Set-Cookie headers:", response.headers.getSetCookie());
 
     return response;
   } catch (err) {
