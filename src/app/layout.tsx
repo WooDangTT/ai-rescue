@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import BetaBanner from "@/components/BetaBanner";
 import { getSessionUserId } from "@/lib/session";
 import { getUser, User } from "@/lib/db";
 
@@ -121,6 +122,7 @@ export default async function RootLayout({
 `}} />
       </head>
       <body>
+        <BetaBanner />
         <Navbar user={user} />
         {children}
         <footer className="footer" data-testid="footer">

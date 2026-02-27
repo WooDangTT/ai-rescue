@@ -1,6 +1,54 @@
 import { test, expect } from '@playwright/test';
 import { waitForHydration, isExternalError } from '../helpers/test-utils';
 
+test.describe('Beta Service Indicators', () => {
+  test.beforeEach(async ({ page }) => {
+    // Clear betaBannerDismissed to ensure fresh banner state
+    await page.context().clearCookies();
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => localStorage.removeItem('betaBannerDismissed'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByTestId('hero').waitFor({ state: 'visible', timeout: 30000 });
+  });
+
+  test('BETA badge is visible in navigation', async ({ page }) => {
+    await expect(page.getByTestId('betaBadge')).toBeVisible();
+    await expect(page.getByTestId('betaBadge')).toContainText('BETA');
+  });
+
+  test('Beta banner is visible on initial load', async ({ page }) => {
+    await expect(page.getByTestId('betaBanner')).toBeVisible();
+    await expect(page.getByTestId('betaBannerMessage')).toContainText(
+      '현재 베타 서비스 운영 중입니다.'
+    );
+  });
+
+  test('Beta banner can be dismissed and stays dismissed on reload', async ({ page }) => {
+    await expect(page.getByTestId('betaBanner')).toBeVisible();
+
+    await page.getByTestId('betaBannerClose').click();
+    await expect(page.getByTestId('betaBanner')).not.toBeVisible();
+
+    // Reload — banner should remain hidden
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByTestId('hero').waitFor({ state: 'visible', timeout: 30000 });
+    await expect(page.getByTestId('betaBanner')).not.toBeVisible();
+  });
+
+  test('Beta indicators appear on pricing page', async ({ page }) => {
+    await page.goto('/pricing', { waitUntil: 'domcontentloaded' });
+    await page.getByTestId('navbar').waitFor({ state: 'visible', timeout: 30000 });
+    await expect(page.getByTestId('betaBadge')).toBeVisible();
+    await expect(page.getByTestId('betaBanner')).toBeVisible();
+  });
+
+  test('Beta badge is inside the navbar brand', async ({ page }) => {
+    const navBrand = page.getByTestId('navBrand');
+    await expect(navBrand).toBeVisible();
+    await expect(navBrand.getByTestId('betaBadge')).toBeVisible();
+  });
+});
+
 test.describe('홈 페이지 렌더링', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

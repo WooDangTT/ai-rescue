@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { User } from "@/lib/db";
+import BetaBadge from "@/components/BetaBadge";
 
 interface NavbarProps {
   user: User | null;
@@ -11,6 +12,7 @@ export default function Navbar({ user }: NavbarProps) {
       <Link href="/" className="nav-brand" data-testid="navBrand">
         <span className="logo-icon">R</span>
         AI RESCUE
+        <BetaBadge />
       </Link>
       <div className="nav-actions">
         {user ? (
