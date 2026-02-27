@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { upsertGoogleUser } from "@/lib/db";
-import { setSessionUserId } from "@/lib/session";
 import { logger } from "@/utils/logger";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -106,10 +105,20 @@ export async function GET(request: Request) {
     );
     logger.info("[auth] User upserted:", user.id);
 
-    // Set session
-    await setSessionUserId(user.id);
+    // Set session cookie directly on redirect response
+    const response = NextResponse.redirect(`${baseUrl}/dashboard`);
+    const useSecure = process.env.COOKIE_SECURE === "true";
+    response.cookies.set("ai_rescue_user_id", user.id, {
+      httpOnly: true,
+      secure: useSecure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+    // Clean up oauth_state cookie
+    response.cookies.delete("oauth_state");
 
-    return NextResponse.redirect(`${baseUrl}/dashboard`);
+    return response;
   } catch (err) {
     logger.error("[auth] OAuth callback error:", err);
     return NextResponse.redirect(`${baseUrl}/?error=server_error`);
