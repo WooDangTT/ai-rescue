@@ -104,22 +104,27 @@ export async function GET(request: Request) {
     );
     logger.info("[auth] User upserted:", user.id);
 
-    // Use raw Response with manual Set-Cookie headers to bypass
-    // Next.js cookie abstractions that may strip cookies on redirects
+    // Return 200 HTML with Set-Cookie headers + JS redirect.
+    // Browsers ignore Set-Cookie on 307 responses that arrive via
+    // cross-origin redirect chains (Google OAuth → our callback).
+    // A 200 response guarantees the browser processes Set-Cookie.
     const useSecure = process.env.COOKIE_SECURE === "true";
     const maxAge = 60 * 60 * 24 * 30; // 30 days
     const securePart = useSecure ? "; Secure" : "";
     const sessionCookie = `ai_rescue_user_id=${user.id}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${securePart}`;
     const deleteOauth = `oauth_state=; Path=/; Max-Age=0`;
 
+    const dashboardUrl = `${baseUrl}/dashboard`;
+    const html = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${dashboardUrl}"></head><body><script>window.location.replace("${dashboardUrl}")</script></body></html>`;
+
     const headers = new Headers();
-    headers.set("Location", `${baseUrl}/dashboard`);
+    headers.set("Content-Type", "text/html; charset=utf-8");
     headers.append("Set-Cookie", sessionCookie);
     headers.append("Set-Cookie", deleteOauth);
 
-    logger.info("[auth] Raw 307 redirect to dashboard, cookie:", sessionCookie);
+    logger.info("[auth] 200 HTML redirect to dashboard, cookie:", sessionCookie);
 
-    return new Response(null, { status: 307, headers });
+    return new Response(html, { status: 200, headers });
   } catch (err) {
     logger.error("[auth] OAuth callback error:", err);
     return NextResponse.redirect(`${baseUrl}/?error=server_error`);
