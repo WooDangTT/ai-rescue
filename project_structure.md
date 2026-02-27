@@ -1,4 +1,6 @@
-The two changed files (`src/app/api/auth/logout/route.ts` and `src/lib/db.ts`) are modifications to existing files with no structural changes — no new files added, no files removed. The structure document remains unchanged.
+The structure changes are clear. Here is the updated project structure document:
+
+---
 
 **Tech Stack**
 - Python 3 (CLI tools: `analyzer.py`, `reporter.py`)
@@ -6,6 +8,7 @@ The two changed files (`src/app/api/auth/logout/route.ts` and `src/lib/db.ts`) a
 - Claude CLI for AI analysis (4 parallel subprocess calls)
 - Next.js App Router with server-side rendering
 - Playwright + TypeScript for E2E testing
+- Jest + React Testing Library for unit testing
 
 **Key Modules**
 - `analyzer.py` — Parallel Claude CLI calls across 4 dimensions (scalability, stability, maintainability, security)
@@ -15,6 +18,8 @@ The two changed files (`src/app/api/auth/logout/route.ts` and `src/lib/db.ts`) a
 - `web/src/lib/analyzer.ts` — Analysis logic (TypeScript)
 - `web/src/lib/session.ts` — Session management
 - `web/src/components/AdBanner.tsx` — Google AdSense component
+- `web/src/components/BetaBadge.tsx` — BETA service badge component
+- `web/src/components/BetaBanner.tsx` — BETA service banner component
 - `web/src/utils/logger.ts` — Logger with ISO timestamps and log levels
 
 **Directory Structure**
@@ -24,7 +29,9 @@ The two changed files (`src/app/api/auth/logout/route.ts` and `src/lib/db.ts`) a
 ├── analyzer.py                  # 4-dimension parallel Claude analysis
 ├── reporter.py                  # Graded report generation
 ├── playwright.config.ts         # Playwright config (port 5050, testDir: ./web/e2e, actionTimeout 15s, navigationTimeout 30s)
+├── jest.config.js               # Jest configuration for unit tests
 ├── package.json
+├── tsconfig.json
 ├── prompts/                     # Claude prompt templates
 │   ├── scalability.txt
 │   ├── stability.txt
@@ -64,12 +71,19 @@ The two changed files (`src/app/api/auth/logout/route.ts` and `src/lib/db.ts`) a
 │       │           └── logout/route.ts
 │       ├── components/
 │       │   ├── Navbar.tsx
-│       │   └── AdBanner.tsx
+│       │   ├── AdBanner.tsx
+│       │   ├── BetaBadge.tsx    # BETA service badge component
+│       │   └── BetaBanner.tsx   # BETA service banner component
 │       ├── lib/
 │       │   ├── db.ts            # SQLite (better-sqlite3) database
 │       │   ├── analyzer.ts      # Analysis logic
 │       │   ├── session.ts       # Session management
 │       │   └── grades.ts        # Grading utilities
+│       ├── test/                # Jest unit tests
+│       │   ├── setup.ts         # Jest test setup
+│       │   └── components/
+│       │       ├── BetaBadge.test.tsx
+│       │       └── BetaBanner.test.tsx
 │       └── utils/
 │           └── logger.ts        # Logger with ISO timestamps, 4 levels
 └── e2e/                         # Playwright E2E tests
