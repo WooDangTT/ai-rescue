@@ -1,9 +1,16 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { upsertGoogleUser } from "@/lib/db";
 import { logger } from "@/utils/logger";
+
+// Parse a specific cookie from the raw Cookie header.
+// Avoids Next.js cookies() API which can interfere with
+// manual Set-Cookie headers on the response.
+function parseCookie(request: Request, name: string): string | undefined {
+  const raw = request.headers.get("cookie") ?? "";
+  const match = raw.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -33,26 +40,26 @@ export async function GET(request: Request) {
   // Handle Google OAuth errors
   if (error) {
     logger.warn("[auth] Google OAuth error:", error);
-    return NextResponse.redirect(`${baseUrl}/?error=oauth_denied`);
+    return Response.redirect(`${baseUrl}/?error=oauth_denied`, 302);
   }
 
   if (!code || !state) {
     logger.warn("[auth] Missing code or state in callback");
-    return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
+    return Response.redirect(`${baseUrl}/?error=invalid_callback`, 302);
   }
 
-  // Verify CSRF state (read-only from cookies, don't modify via cookies() API)
-  const cookieStore = await cookies();
-  const savedState = cookieStore.get("oauth_state")?.value;
+  // Verify CSRF state by reading raw Cookie header directly.
+  // Avoids cookies() API which interferes with Set-Cookie on the response.
+  const savedState = parseCookie(request, "oauth_state");
 
   if (!savedState || savedState !== state) {
-    logger.warn("[auth] CSRF state mismatch");
-    return NextResponse.redirect(`${baseUrl}/?error=invalid_state`);
+    logger.warn("[auth] CSRF state mismatch, saved:", savedState?.substring(0, 8), "got:", state.substring(0, 8));
+    return Response.redirect(`${baseUrl}/?error=invalid_state`, 302);
   }
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     logger.error("[auth] Google OAuth credentials not configured");
-    return NextResponse.redirect(`${baseUrl}/?error=server_error`);
+    return Response.redirect(`${baseUrl}/?error=server_error`, 302);
   }
 
   try {
@@ -73,7 +80,7 @@ export async function GET(request: Request) {
     if (!tokenRes.ok) {
       const errBody = await tokenRes.text();
       logger.error("[auth] Token exchange failed:", errBody);
-      return NextResponse.redirect(`${baseUrl}/?error=token_failed`);
+      return Response.redirect(`${baseUrl}/?error=token_failed`, 302);
     }
 
     const tokens: GoogleTokenResponse = await tokenRes.json();
@@ -89,7 +96,7 @@ export async function GET(request: Request) {
 
     if (!userInfoRes.ok) {
       logger.error("[auth] Failed to fetch user info");
-      return NextResponse.redirect(`${baseUrl}/?error=userinfo_failed`);
+      return Response.redirect(`${baseUrl}/?error=userinfo_failed`, 302);
     }
 
     const userInfo: GoogleUserInfo = await userInfoRes.json();
@@ -127,6 +134,6 @@ export async function GET(request: Request) {
     return new Response(html, { status: 200, headers });
   } catch (err) {
     logger.error("[auth] OAuth callback error:", err);
-    return NextResponse.redirect(`${baseUrl}/?error=server_error`);
+    return Response.redirect(`${baseUrl}/?error=server_error`, 302);
   }
 }
