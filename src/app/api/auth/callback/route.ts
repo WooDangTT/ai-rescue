@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { upsertGoogleUser } from "@/lib/db";
 import { logger } from "@/utils/logger";
 
@@ -105,25 +104,23 @@ export async function GET(request: Request) {
     );
     logger.info("[auth] User upserted:", user.id);
 
-    // Set cookies via cookies() API and redirect via next/navigation
+    // Use raw Response with manual Set-Cookie headers to bypass
+    // Next.js cookie abstractions that may strip cookies on redirects
     const useSecure = process.env.COOKIE_SECURE === "true";
-    cookieStore.set("ai_rescue_user_id", user.id, {
-      httpOnly: true,
-      secure: useSecure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
-    cookieStore.delete("oauth_state");
+    const maxAge = 60 * 60 * 24 * 30; // 30 days
+    const securePart = useSecure ? "; Secure" : "";
+    const sessionCookie = `ai_rescue_user_id=${user.id}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${securePart}`;
+    const deleteOauth = `oauth_state=; Path=/; Max-Age=0`;
 
-    logger.info("[auth] Redirecting to dashboard, secure:", useSecure);
+    const headers = new Headers();
+    headers.set("Location", `${baseUrl}/dashboard`);
+    headers.append("Set-Cookie", sessionCookie);
+    headers.append("Set-Cookie", deleteOauth);
 
-    redirect(`${baseUrl}/dashboard`);
-  } catch (err: unknown) {
-    // redirect() throws a special error — re-throw it
-    if (err instanceof Error && err.message?.includes("NEXT_REDIRECT")) {
-      throw err;
-    }
+    logger.info("[auth] Raw 307 redirect to dashboard, cookie:", sessionCookie);
+
+    return new Response(null, { status: 307, headers });
+  } catch (err) {
     logger.error("[auth] OAuth callback error:", err);
     return NextResponse.redirect(`${baseUrl}/?error=server_error`);
   }
