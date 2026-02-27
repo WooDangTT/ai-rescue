@@ -109,7 +109,7 @@ export async function GET(request: Request) {
     // may not persist cookies set on redirect responses reliably.
     const redirectUrl = `${baseUrl}/dashboard`;
     const useSecure = process.env.COOKIE_SECURE === "true";
-    const html = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head><body><script>window.location.href="${redirectUrl}";</script></body></html>`;
+    const html = `<!DOCTYPE html><html><head></head><body><p>Redirecting...</p><script>setTimeout(function(){window.location.href="${redirectUrl}"},100);</script></body></html>`;
     const response = new NextResponse(html, {
       status: 200,
       headers: { "Content-Type": "text/html" },
